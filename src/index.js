@@ -4,7 +4,10 @@ import connectDB from "./db/index.js";
 import {app} from "./app.js"
 
 dotenv.config({
-    path: './env'
+    // path:'./env'
+    //it was working without adding . before env ".env" but is a good practise to add it .
+    
+    path: './.env'
 })
 
 connectDB()
