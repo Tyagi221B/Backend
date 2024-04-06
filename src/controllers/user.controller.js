@@ -4,6 +4,23 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+
+const generateAccessAndRefreshTokens = async(userId) => {
+    try {
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return {accessToken, refreshToken}
+
+    } catch (error) {
+        throw new ApiError(500, "something went wrong while generating refresh and access token")
+    }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
     //get user details from frontend
     //validation - not empty
@@ -66,9 +83,11 @@ const registerUser = asyncHandler(async (req, res) => {
         username: username.toLowerCase(),
     });
 
+    //removing password and refresh token field from response
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     );
+
     if (!createdUser) {
         throw new ApiError(
             500,
@@ -83,4 +102,69 @@ const registerUser = asyncHandler(async (req, res) => {
         );
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async(req,res)=>{
+    //req data from body
+    //check if the user with either username or email already exists in the database or not
+    //find the user, if not then User does not exist.
+    //if user exits then do password check
+    //generate access and refresh token
+    //remove sesitive information from the loggedIn user data
+    //send cookie
+
+    const {email, username, password} = req.body
+    if(!username || !email){
+        throw new ApiError(400, "username or email is required")
+    }
+
+    //Find the user by email or username in the database
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if(!user){
+        throw new ApiError(404, "User does not exist")
+    }
+    
+    //Check if the provided password matches with the user's password
+    const isPasswordvalid = await user.isPasswordCorrect(password)
+    
+    if(!isPasswordvalid){
+        throw new ApiError(401, "Invaild user credentials")
+    }
+
+    //Generate access and refresh tokens for the user
+    const {accessToken , refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+    //Retrive logged-in user data without sensitive information
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    //Options for setting cookies
+    const options = {
+        httpOnly: true, // Cookie accessible only via HTTP(S)
+        secure: true // Cookie sent only over HTTPS
+    }
+
+
+    //Send response with the cookies and user data
+    return res
+    .status(200)
+    .cookie("accessToken", accessToken, options )
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user: loggedInUser, accessToken,refreshToken
+            },
+            "User logged in Successfully"
+        )
+    )
+})
+
+const logoutUser = asyncHandler(async(req, res) => {
+
+})
+
+
+
+export { registerUser, loginUser, logoutUser  };
