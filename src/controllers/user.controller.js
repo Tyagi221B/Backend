@@ -162,7 +162,29 @@ const loginUser = asyncHandler(async(req,res)=>{
 })
 
 const logoutUser = asyncHandler(async(req, res) => {
+    User.findByIdAndUpdate(
+        req.user._id, // Using the user ID from the request(req) object which is set by verifyJWT middleware.
 
+        {
+            $set: {
+                refreshToken: undefined // Set the user's refresh token to undefined to prevent further use
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    const options = {
+        httpOnly:true, //Prevent client-side JavaScript access to the cookie
+        secure: true // Only send the cookie over HTTPS connections 
+    }
+
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out Successfully "))
 })
 
 
