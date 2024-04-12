@@ -73,6 +73,7 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     const avatar = await uploadOnCloudinary(avatarLocalPath);
+    // console.log(avatar);
     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
     if (!avatar) {
@@ -86,6 +87,7 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         password,
         username: username.toLowerCase(),
+        avatarPublicId: avatar.public_id,
     });
 
     //removing password and refresh token field from response
@@ -305,46 +307,41 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-    //checking if the upload to the cloudinary was successful
     if (!avatar.url) {
         throw new ApiError(400, "Error while uploading avatar to cloudinary");
     }
 
-    //Get currently logged-in user's ID
     const userId = req.user?._id;
 
-    //getting the user object
     const user = await User.findById(userId);
 
-    //get the old avatar URL from the user object
-    const previousAvatarUrl = user?.avatar.url;
-
-    //now updating the user's avatar url in the database
+    //now updating the user's avatar url and avatarPublicId in the database
     const updatedUser = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
                 avatar: avatar.url,
+                avatarPublicId: avatar.public_id,
             },
         },
         { new: true }
     ).select("-password");
 
     //if update is successful and there is a previous avatar URL, delete the old avatar from cloudinary
-    if (previousAvatarUrl) {
+    if (user?.avatarPublicId) {
         try {
-            await deleteOldFileFromCloudinary(previousAvatarUrl);
+            await deleteOldFileFromCloudinary(user?.avatarPublicId);
         } catch (error) {
             throw new ApiError(
                 400,
-                error?.error.message  || "Error while deleting old avatar from cloudinary"
+                "Error while deleting old avatar from cloudinary"
             );
         }
     }
 
     return res
         .status(200)
-        .json(new ApiResponse(200, user, "Avatar updated successfully"));
+        .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {

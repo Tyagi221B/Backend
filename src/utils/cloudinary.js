@@ -32,9 +32,7 @@ const deleteOldFileFromCloudinary = async (oldFilePath) => {
     try {
         if(!oldFilePath) return null;
         //delete the file on cloudinary
-        const response = await cloudinary.uploader.destroy(oldFilePath, {
-            resource_type: "auto",
-        });
+        const response = await cloudinary.uploader.destroy(oldFilePath);
         return response;
     } catch (error) {
         throw new ApiError(error?.message || "Error deleting on cloudinary")

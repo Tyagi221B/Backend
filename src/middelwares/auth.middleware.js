@@ -15,7 +15,7 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
         // The access token can potentially come from either the frontend (web browser) or the backend (custom native application). Web browsers typically send tokens in cookies, so we check `req.cookies.accessToken` first. If not available, we check the `Authorization` header for a Bearer token format ("Authorization: Bearer <token>") and extract the actual token by removing the "Bearer " prefix. This flexible approach allows our API to handle authentication from various client applications.
 
         if(!token){
-            throw new ApiError(401, "Unauthorized request")
+            throw new ApiError(401, "You are not authorized to do this request")
         }
 
         // Verify the token using the secret key from the environment variable

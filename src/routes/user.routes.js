@@ -1,7 +1,9 @@
 import { Router } from "express";
 import {
+    changeCurrentPassoword,
     getCurrentUser,
     getUserChannelProfile,
+    getWatchHistory,
     loginUser,
     logoutUser,
     refreshAccessToken,
@@ -27,28 +29,28 @@ router.route("/register").post(
         },
     ]),
     registerUser
-);
+); //working
 
-router.route("/login").post(loginUser);
+router.route("/login").post(loginUser); //working
 
 //secured routed
 router.route("/logout").post(verifyJWT, logoutUser);
 
 router.route("/refresh-token").post(refreshAccessToken);
 
-router.route("/change-password").post(verifyJWT, changePassword);
+router.route("/change-password").post(verifyJWT, changeCurrentPassoword);
 
-router.route("/current-user").get(verifyJWT, getCurrentUser);
+router.route("/current-user").get(verifyJWT, getCurrentUser); //working
 
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
 
 router
-    .route("/update-avatar")
+    .route("/update-user-avatar")
     .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
 
 router
-    .route("/update-coverImage")
-    .patch(verifyJWT, upload.single("/coverImage"), updateUserCoverImage);
+    .route("/update-user-coverImage")
+    .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 
