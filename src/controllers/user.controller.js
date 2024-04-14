@@ -202,6 +202,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken =
         req.cookies.refreshToken || req.body.refreshToken;
+         //clients that might choose to send the refresh token in the request body instead(Like mobile applications).
 
     if (!incomingRefreshToken) {
         throw new ApiError(401, "unauthorized request");
@@ -248,23 +249,29 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const changeCurrentPassoword = asyncHandler(async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
+    try {
+        const { oldPassword, newPassword } = req.body;
+        // console.log(oldPassword, newPassword);
+    
+        const user = await User.findById(req.user?._id);
+    
+        const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
-    const user = await User.findById(req.user?._id);
+        if (!isPasswordCorrect) {
+            throw new ApiError(400, "Invalid old password");
+        }
+    
+        user.password = newPassword;
+    
+        await user.save({ validateBeforeSave: false });
+    
+        return res
+            .status(200)
+            .json(new ApiResponse(200, {}, "Password changed successfully"));
 
-    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
-
-    if (!isPasswordCorrect) {
-        throw new ApiError(400, "Invalid old password");
+    } catch (error) {
+        throw new ApiError(400, error?.message || "Error updating password")
     }
-
-    user.password = newPassword;
-
-    await user.save({ validateBeforeSave: false });
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, {}, "Password changed successfully"));
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
@@ -274,28 +281,37 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-    const { fullName, email } = req.body;
-
-    if (!fullName || !email) {
-        throw new ApiError(400, "All fields are required");
-    }
-
-    const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-            $set: {
-                fullName: fullName,
-                email: email,
+    try {
+        const { fullName, email, username } = req.body;
+        // console.log(email);
+    
+        if (!fullName || !email || !username) {
+            throw new ApiError(400, "All fields are required");
+        }
+        //TODO:check if the username is already exist in the database or not.
+        //Todo:check if the email is already exist in the database or not.
+        //Todo: do email validation, weather the email is in the correct format or not.
+    
+        const user = await User.findByIdAndUpdate(
+            req.user?._id,
+            {
+                $set: {
+                    fullName: fullName,
+                    email: email,
+                    username: username.toLowerCase(),
+                },
             },
-        },
-        { new: true }
-    ).select("-password");
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200, user, "Account details updated successfully")
-        );
+            { new: true }
+        ).select("-password");
+    
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, user, "Account details updated successfully")
+            );
+    } catch (error) {
+        throw new ApiError(200, error?.message || "Error updating account details")
+    }
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {

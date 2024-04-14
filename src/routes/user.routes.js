@@ -38,15 +38,15 @@ router.route("/logout").post(verifyJWT, logoutUser);
 
 router.route("/refresh-token").post(refreshAccessToken);
 
-router.route("/change-password").post(verifyJWT, changeCurrentPassoword);
+router.route("/change-password").post(verifyJWT, changeCurrentPassoword); //working
 
 router.route("/current-user").get(verifyJWT, getCurrentUser); //working
 
-router.route("/update-account").patch(verifyJWT, updateAccountDetails);
+router.route("/update-account").patch(verifyJWT, updateAccountDetails); //working
 
 router
     .route("/update-user-avatar")
-    .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
+    .patch(verifyJWT, upload.single("avatar"), updateUserAvatar); //working
 
 router
     .route("/update-user-coverImage")
